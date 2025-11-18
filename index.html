@@ -1,10 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Medical & Medicine Entry</title>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- AutoTable Plugin -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
 <style>
     body {
@@ -70,11 +75,9 @@
 
 <div class="box">
 
-    <!-- MEDICAL NAME SEARCH -->
     <input type="text" id="medicalName" placeholder="Search Medical Name">
     <div class="suggestions" id="medicalSuggest"></div>
 
-    <!-- MEDICINE NAME SEARCH -->
     <input type="text" id="medicine" placeholder="Search Medicine Name">
     <div class="suggestions" id="medicineSuggest"></div>
 
@@ -84,7 +87,7 @@
     <button onclick="addEntry()">Add</button>
 </div>
 
-<table>
+<table id="mainTable">
     <thead>
         <tr>
             <th>Medical Name</th>
@@ -96,48 +99,35 @@
     <tbody id="outputTable"></tbody>
     
 </table>
+
 <button onclick="downloadPDF()" style="background:crimson;margin-top:10px;">
     Download Data (PDF)
 </button>
-<script>
-async function downloadPDF() {
-    const { jsPDF } = window.jspdf;
 
+<script>
+
+/* ------------------------ PDF DOWNLOAD ------------------------- */
+
+function downloadPDF() {
+    const { jsPDF } = window.jspdf;
     let doc = new jsPDF();
-    let y = 20;
 
     doc.setFontSize(18);
-    doc.text("Medical Billing Data", 14, y);
-    y += 10;
+    doc.text("Medical Billing Data", 14, 15);
 
-    doc.setFontSize(12);
-
-    let rows = document.querySelectorAll("table tr");
-
-    rows.forEach((row, index) => {
-        let cols = row.querySelectorAll("td, th");
-        let line = [];
-
-        cols.forEach(col => {
-            line.push(col.innerText);
-        });
-
-        doc.text(line.join(" | "), 10, y);
-        y += 10;
-
-        if (y > 280) {
-            doc.addPage();
-            y = 20;
-        }
+    doc.autoTable({
+        html: "#mainTable",
+        startY: 25,
+        theme: "grid"
     });
 
     doc.save("medical_data.pdf");
 }
-    /* -----------------------------
-       LIST OF MEDICAL SHOPS
-    ----------------------------- */
-    const medicalList = [
-        "PRIME MEDICAL & GENERAL STORES",
+
+/* ------------------------ AUTO COMPLETE DATA ------------------------- */
+
+const medicalList = [
+    "PRIME MEDICAL & GENERAL STORES",
     "LIFE CARE HOSPITAL",
     "G.K. MED & GEN STORES",
     "JEERGAL CHILDREN HOSPITAL",
@@ -150,14 +140,12 @@ async function downloadPDF() {
     "KUCHANUR MED & GEN STORES",
     "DR IQBAL",
     "SHAIKH HOSPITAL",
-    "A TO Z MEDICAL","Dr Touseef"
-    ];
+    "A TO Z MEDICAL",
+    "Dr Touseef"
+];
 
-    /* -----------------------------
-       LIST OF MEDICINES
-    ----------------------------- */
-    const medicineList = [
-       "Avovent-LI", 
+const medicineList = [
+    "Avovent-LI",
     "Budazest Respules",
     "Klinmol I.V",
     "Leazyme DS Syp",
@@ -190,15 +178,15 @@ async function downloadPDF() {
     "Safazi-250 Tab",
     "Papra-40 Tab",
     "Rapra-DSR Cap",
-    "Moxitec-CV  Dry Syp",
+    "Moxitec-CV Dry Syp",
     "Moxitec-CV-Forte",
     "Lini Gel",
     "Cynim-P Tab",
     "Levzin-M Tab",
-    "Cebaxim-50LB ",
+    "Cebaxim-50LB",
     "C-HEP-T Syp",
     "Upwell Syp",
-    "Notemp-MF .",
+    "Notemp-MF",
     "Cebaxim-O",
     "Q-Rex-LS Syp",
     "Upwell Drop",
@@ -207,88 +195,83 @@ async function downloadPDF() {
     "Lulinik Cream",
     "RG-Best Sachet",
     "Notemp-AF Drop",
-        "Byndrol LS","Byndrol AG"
-    ];
+    "Byndrol LS",
+    "Byndrol AG"
+];
 
-    /* ------------------------------------------
-       GENERIC AUTOCOMPLETE FUNCTION
-    ------------------------------------------ */
-    function setupAutocomplete(inputId, suggestionId, listArray) {
-        const input = document.getElementById(inputId);
-        const suggestBox = document.getElementById(suggestionId);
+/* ------------------------ GENERIC AUTOCOMPLETE ------------------------ */
 
-        input.addEventListener("input", function () {
-            let value = this.value.toLowerCase();
-            suggestBox.innerHTML = "";
+function setupAutocomplete(inputId, suggestionId, listArray) {
+    const input = document.getElementById(inputId);
+    const suggestBox = document.getElementById(suggestionId);
 
-            if (value === "") {
-                suggestBox.style.display = "none";
-                return;
-            }
+    input.addEventListener("input", function () {
+        let value = this.value.toLowerCase();
+        suggestBox.innerHTML = "";
 
-            let filtered = listArray.filter(item =>
-                item.toLowerCase().includes(value)
-            );
-
-            if (filtered.length === 0) {
-                suggestBox.style.display = "none";
-            } else {
-                suggestBox.style.display = "block";
-
-                filtered.forEach(item => {
-                    let div = document.createElement("div");
-                    div.textContent = item;
-
-                    div.onclick = function () {
-                        input.value = item;
-                        suggestBox.style.display = "none";
-                    };
-
-                    suggestBox.appendChild(div);
-                });
-            }
-        });
-    }
-
-    // Activate autocomplete for both fields
-    setupAutocomplete("medicalName", "medicalSuggest", medicalList);
-    setupAutocomplete("medicine", "medicineSuggest", medicineList);
-
-
-    /* ------------------------------------------
-       ADD ENTRY TO TABLE
-    ------------------------------------------ */
-    function addEntry() {
-        let medStore = document.getElementById("medicalName").value;
-        let medName = document.getElementById("medicine").value;
-        let qty = document.getElementById("quantity").value;
-        let notes = document.getElementById("free").value;
-
-        if (medStore === "" || medName === "") {
-            alert("Please select both medical name and medicine name.");
+        if (value === "") {
+            suggestBox.style.display = "none";
             return;
         }
 
-        let table = document.getElementById("outputTable");
+        let filtered = listArray.filter(item =>
+            item.toLowerCase().includes(value)
+        );
 
-        table.innerHTML += `
-            <tr>
-                <td>${medStore}</td>
-                <td>${medName}</td>
-                <td>${qty}</td>
-                <td>${notes}</td>
-            </tr>
-        `;
+        if (filtered.length === 0) {
+            suggestBox.style.display = "none";
+        } else {
+            suggestBox.style.display = "block";
 
-        // Clear fields
-        document.getElementById("medicalName").value = "";
-        document.getElementById("medicine").value = "";
-        document.getElementById("quantity").value = "";
-        document.getElementById("free").value = "";
+            filtered.forEach(item => {
+                let div = document.createElement("div");
+                div.textContent = item;
+
+                div.onclick = function () {
+                    input.value = item;
+                    suggestBox.style.display = "none";
+                };
+
+                suggestBox.appendChild(div);
+            });
+        }
+    });
+}
+
+setupAutocomplete("medicalName", "medicalSuggest", medicalList);
+setupAutocomplete("medicine", "medicineSuggest", medicineList);
+
+/* ----------------------- ADD TABLE ENTRY ------------------------- */
+
+function addEntry() {
+    let medStore = document.getElementById("medicalName").value;
+    let medName = document.getElementById("medicine").value;
+    let qty = document.getElementById("quantity").value;
+    let notes = document.getElementById("free").value;
+
+    if (medStore === "" || medName === "") {
+        alert("Please select both medical name and medicine name.");
+        return;
     }
+
+    let table = document.getElementById("outputTable");
+
+    table.innerHTML += `
+        <tr>
+            <td>${medStore}</td>
+            <td>${medName}</td>
+            <td>${qty}</td>
+            <td>${notes}</td>
+        </tr>
+    `;
+
+    document.getElementById("medicalName").value = "";
+    document.getElementById("medicine").value = "";
+    document.getElementById("quantity").value = "";
+    document.getElementById("free").value = "";
+}
 
 </script>
 
 </body>
-
-  </html>
+</html>
